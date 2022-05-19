@@ -40,7 +40,7 @@ enum Ground {
 type Tile = (Ground, Option<(Player, Piece)>);
 type Tiles = [Tile; TILES_W * TILES_H];
 type TileIdx = usize;
-type TileCoord = (TileIdx, TileIdx);
+type TileCoord = (isize, isize);
 
 const TILES_W: TileIdx = 7;
 const TILES_H: TileIdx = 9;
@@ -52,17 +52,11 @@ struct Board {
 }
 
 fn map_project((x, y): TileCoord) -> TileIdx {
-    if x >= TILES_W {
-        panic!("x greater than TILES_W")
-    } else if y >= TILES_H {
-        panic!("y greated than TILES_H")
-    } else {
-        y * TILES_W + x
-    }
+    (y * (TILES_W as isize) + x) as usize
 }
 
 fn map_unproject(i: TileIdx) -> TileCoord {
-    (i % TILES_W, i / TILES_W)
+    ((i % TILES_W) as isize, (i / TILES_W) as isize)
 }
 
 fn init_map() -> Tiles {
@@ -70,7 +64,7 @@ fn init_map() -> Tiles {
     let mut tiles: Tiles = [(Ground::Grass, None); TILES_W * TILES_H];
 
     // fill water
-    let mut put_water = |x: usize, y: usize| {
+    let mut put_water = |x: isize, y: isize| {
         tiles[map_project((x, y))] = (Ground::Water, None);
     };
 
@@ -79,12 +73,12 @@ fn init_map() -> Tiles {
             continue;
         }
         for y in 3..(TILES_H - 1 - 2) {
-            put_water(x.clone(), y.clone());
+            put_water(x.clone() as isize, y.clone() as isize);
         }
     }
     // add player's pieces.
     let mut put_piece = |x: usize, y: usize, who, what| {
-        tiles[map_project((x, y))] = (Ground::Grass, Some((who, what)));
+        tiles[map_project((x as isize, y as isize))] = (Ground::Grass, Some((who, what)));
     };
 
     put_piece(0, 0, Player::Player1, Piece::Lion);
@@ -147,7 +141,7 @@ fn init_map() -> Tiles {
 
     // add player traps
     let mut put_trap = |x: usize, y: usize, who| {
-        tiles[map_project((x, y))] = (Ground::Trap(who), None);
+        tiles[map_project((x as isize, y as isize))] = (Ground::Trap(who), None);
     };
     put_trap(2, 0, Player::Player1);
     put_trap(4, 0, Player::Player1);
@@ -157,7 +151,7 @@ fn init_map() -> Tiles {
     put_trap(3, TILES_H - 1 - 1, Player::Player2);
     // add player dens
     let mut put_den = |x: usize, y: usize, who| {
-        tiles[map_project((x, y))] = (Ground::Den(who), None);
+        tiles[map_project((x as isize, y as isize))] = (Ground::Den(who), None);
     };
     put_den(3, 0, Player::Player1);
     put_den(3, TILES_H - 1, Player::Player2);
@@ -187,27 +181,99 @@ impl Board {
     }
 
     fn get_next_moves(&self, who: Player) -> Vec<(Piece, TileCoord, Vec<TileCoord>)> {
-        let up_of = |(x, y): TileCoord| (x, y + 1);
-        let down_of = |(x, y): TileCoord| (x, y - 1);
-        let left_of = |(x, y): TileCoord| (x - 1, y);
-        let right_of = |(x, y): TileCoord| (x + 1, y);
+        let up_of = |(x, y): TileCoord| -> TileCoord { (x, y + 1) };
+        let down_of = |(x, y): TileCoord| -> TileCoord { (x, y - 1) };
+        let left_of = |(x, y): TileCoord| -> TileCoord { (x - 1, y) };
+        let right_of = |(x, y): TileCoord| -> TileCoord { (x + 1, y) };
 
-        let is_in_bounds = |i| i >= 0 && i < TILES_COUNT;
-        let is_coord_in_bounds = |c| is_in_bounds(map_project(c));
+        let is_coord_in_bounds = |(x,y): TileCoord| x >= 0 && x < (TILES_W as isize) && y >= 0 && y < (TILES_H as isize);
+        
+        let is_water_at = |c| is_coord_in_bounds(c) && match self.tiles[map_project(c)] {
+            (Ground::Water, _) => true,
+            _ => false,
+        };
+        let is_rat_at = |c| is_coord_in_bounds(c) && match self.tiles[map_project(c)] {
+            (_, Some((_, Piece::Rat))) => true,
+            _ => false,
+        };
 
-        let can_step = |p: Piece, c| {
-            is_coord_in_bounds(c)
-                && match (p, self.tiles[map_project(c)]) {
-                    (_, (Ground::Grass, None)) => true,
-                    (_, (Ground::Grass, Some((other_player, other_piece)))) => {
+
+        let can_step_from_to = |p: Piece, from, to| {
+            is_coord_in_bounds(from) && is_coord_in_bounds(to)
+                && match (
+                    p,
+                    self.tiles[map_project(from)],
+                    self.tiles[map_project(to)],
+                ) {
+                    // rats beat other rats in water.
+                    (Piece::Rat, (Ground::Water, _), (Ground::Water, _)) => true,
+                    // rats dont beat other rats if coming from grass to water.
+                    (Piece::Rat, (Ground::Grass, _), (Ground::Water, Some(_))) => false,
+                    // other pieces cannot enter water.
+                    (_, _, (Ground::Water, _)) => false,
+                    // every piece can walk freely on grass.
+                    (_, (Ground::Grass, _), (Ground::Grass, None)) => true,
+                    // if grass is occupied, a piece can only move towards with capture.
+                    (_, (Ground::Grass, _), (Ground::Grass, Some((other_player, other_piece)))) => {
                         who != other_player && p.beats(other_piece)
                     }
-                    _ => unimplemented!(),
+                    (_, _, _) => true,
                 }
+        };
+        let next_steps = |p: Piece, c: TileCoord| -> Vec<TileCoord> {
+            let generic_neighbors = |p, c| {
+                [up_of(c), left_of(c), right_of(c), down_of(c)]
+                    .iter()
+                    .filter(|cc: &&TileCoord| can_step_from_to(p, c, **cc))
+                    .map(|c| *c)
+                    .collect()
+            };
+
+            let mut steps: Vec<TileCoord> = generic_neighbors(p,c);
+            match p {
+                Piece::Tiger | Piece::Lion => {
+                    if is_water_at(down_of(c)) {
+                        if !is_rat_at(down_of(c))
+                            && !is_rat_at(down_of(down_of(c)))
+                            && !is_rat_at(down_of(down_of(down_of(c))))
+                            && can_step_from_to(p, c, down_of(down_of(down_of(down_of(c)))))
+                        {
+                            steps.push(down_of(down_of(down_of(down_of(c)))));
+                        }
+                    }
+                    if is_water_at(up_of(c)) {
+                        if  !is_rat_at(up_of(c))
+                            && !is_rat_at(up_of(up_of(c)))
+                            && !is_rat_at(up_of(up_of(up_of(c))))
+                            && can_step_from_to(p, c, up_of(up_of(up_of(up_of(c)))))
+                        {
+                            steps.push(up_of(up_of(up_of(up_of(c)))));
+                        }
+                    }
+                    if is_water_at(left_of(c)) {
+                        if  !is_rat_at(left_of(c))
+                            && !is_rat_at(left_of(left_of(c)))
+                            && can_step_from_to(p, c, left_of(left_of(left_of(c))))
+                        {
+                            steps.push(left_of(left_of(left_of(c))));
+                        }
+                    }
+                    if is_water_at(right_of(c)) {
+                        if  !is_rat_at(right_of(c))
+                            && !is_rat_at(right_of(right_of(c)))
+                            && can_step_from_to(p, c, right_of(right_of(right_of(c))))
+                        {
+                            steps.push(right_of(right_of(right_of(c))));
+                        }
+                    }
+                },
+                _ => (),
+            }
+            steps
         };
         let pieces = self.get_player_pieces(who);
 
-        unimplemented!()
+        pieces.iter().map(|(p,c)| (p,c,next_steps(*p,*c))).map(|(p,c,d)| (*p,*c,d)).collect()
     }
 }
 
@@ -231,7 +297,7 @@ impl Display for Board {
             (Ground::Grass, _) => "🟩".to_string(),
             (Ground::Den(p), _) => player_colored(p, "🏠"),
             (Ground::Water, _) => "🟦".to_string(),
-            (Ground::Trap(p), _) => player_colored(p, "❎"),
+            (Ground::Trap(p), _) => player_colored(p, "🥅"),
         };
         let formatted = self
             .tiles
@@ -298,6 +364,12 @@ mod tests {
             ],
             b.get_player_pieces(Player::Player2)
         );
+    }
+
+    #[test]
+    fn next_steps() {
+        let b = Board::new();
+        dbg!(b.get_next_moves(Player::Player2));
     }
 
     #[test]
