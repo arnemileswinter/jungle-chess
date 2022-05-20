@@ -1,12 +1,8 @@
-mod ai;
 mod board;
 
 use std::io::{self, Read, Write};
 
-use crate::{
-    ai::estimate,
-    board::{get_other_player, Board, Player, TileCoord},
-};
+use crate::board::{get_other_player, Board, Player, TileCoord};
 
 enum Prompt<T> {
     Valid(T),
@@ -129,7 +125,6 @@ fn main() {
     let mut player_to_move = Player::Player1;
 
     loop {
-        dbg!(estimate(player_to_move, &b));
         let (from_pos, to_pos) = get_next_valid_move_from_stdin(&b, player_to_move, &mut stdin);
         let (new_b, winner, caps) = b
             .make_move(player_to_move, from_pos, to_pos)
@@ -137,7 +132,7 @@ fn main() {
 
         println!(
             "{} {}",
-            winner.map_or_else(|| "".to_string(), |p| format!("{} won the game!", p)),
+            winner.map_or_else(|| "".to_string(), |p| format!("{}\n{} won the game!", new_b, p)),
             caps.map_or_else(
                 || "".to_string(),
                 |(p, c)| format!("captured {}'s {}.", p, c)
