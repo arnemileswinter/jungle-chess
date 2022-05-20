@@ -9,6 +9,7 @@ Play Jungle Chess on an Emoji-Enabled Linux Terminal!
 ## How to play
 
 Each player tries to either: 
+
     * enter their opponent's Den (🏠). 
     * capture all opponent's pieces.
 
@@ -19,6 +20,7 @@ Player's play in turns. Each piece can move freely on the ground.
 Every piece can capture another piece of equal rank.
 
 In order to capture a piece, the following hierarchy holds:
+
     * Elephant (🐘)
     * Lion (🦁)
     * Tiger (🐯)
