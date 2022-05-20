@@ -9,23 +9,24 @@ Play Jungle Chess on an Emoji-Enabled Linux Terminal!
 ## How to play
 
 Each player tries to either: 
-    - enter their opponent's Den (🏠). 
-    - capture all opponent's pieces.
+    * enter their opponent's Den (🏠). 
+    * capture all opponent's pieces.
 
 Player's play in turns. Each piece can move freely on the ground.
 
 ### Capturing Pieces
 
 Every piece can capture another piece of equal rank.
+
 In order to capture a piece, the following hierarchy holds:
-    - Elephant (🐘)
-    - Lion (🦁)
-    - Tiger (🐯)
-    - Leopard (🐆)
-    - Wolf (🐺)
-    - Dog (🐕)
-    - Cat (🐱)
-    - Rat (🐭)
+    * Elephant (🐘)
+    * Lion (🦁)
+    * Tiger (🐯)
+    * Leopard (🐆)
+    * Wolf (🐺)
+    * Dog (🐕)
+    * Cat (🐱)
+    * Rat (🐭)
 
 Whereas the Elephant cannot capture the Rat (🐭) , but the Rat (🐭) captures the Elephant (🐘).
 The Rat (🐭) can not move to capture an Elephant (🐘) while emerging from water (🟦) (see #making-a-move). 
