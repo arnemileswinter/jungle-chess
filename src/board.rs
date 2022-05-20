@@ -17,7 +17,7 @@ impl Piece {
         match (self, other) {
             (Piece::Rat, Piece::Elephant) => true,
             (Piece::Elephant, Piece::Rat) => false,
-            (a, b) => (a as u8) > (b as u8),
+            (a, b) => (a as u8) >= (b as u8),
         }
     }
 }
@@ -317,7 +317,8 @@ impl Board {
                     // if grass is occupied, a piece can only move towards with capture.
                     (_, (Ground::Grass, _), (Ground::Grass, Some((other_player, other_piece)))) => {
                         who != other_player && p.beats(other_piece)
-                    }
+                    },
+                    (_, _, (Ground::Den(other_player), _)) => other_player != who,
                     (_, _, _) => true,
                 }
         };
