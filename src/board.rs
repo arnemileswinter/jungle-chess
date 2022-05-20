@@ -317,7 +317,7 @@ impl Board {
                     // if grass is occupied, a piece can only move towards with capture.
                     (_, (Ground::Grass, _), (Ground::Grass, Some((other_player, other_piece)))) => {
                         who != other_player && p.beats(other_piece)
-                    },
+                    }
                     (_, _, (Ground::Den(other_player), _)) => other_player != who,
                     (_, _, _) => true,
                 }
@@ -481,6 +481,7 @@ mod tests {
     #[test]
     fn beats() {
         assert!(Piece::Elephant.beats(Piece::Lion));
+        assert!(Piece::Elephant.beats(Piece::Elephant));
         assert!(Piece::Rat.beats(Piece::Elephant));
         assert!(Piece::Cat.beats(Piece::Rat));
         assert!(!(Piece::Elephant.beats(Piece::Rat)));

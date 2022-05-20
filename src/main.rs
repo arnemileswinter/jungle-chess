@@ -1,13 +1,13 @@
 mod board;
 
-use std::io::{self, BufRead, Read, Write};
+use std::io::{self, Read, Write};
 
 use crate::board::{get_other_player, Board, Player, TileCoord};
 
 enum Prompt<T> {
     Valid(T),
     Invalid,
-    Abort
+    Abort,
 }
 
 fn get_position_from_stdin(stdin: &mut io::StdinLock) -> Prompt<TileCoord> {
@@ -40,7 +40,11 @@ fn coord_to_position((x, y): TileCoord) -> String {
     out
 }
 
-fn get_next_valid_move_from_stdin(board : &Board, player_to_move : Player, stdin: &mut io::StdinLock) -> (TileCoord, TileCoord) {
+fn get_next_valid_move_from_stdin(
+    board: &Board,
+    player_to_move: Player,
+    stdin: &mut io::StdinLock,
+) -> (TileCoord, TileCoord) {
     let mut from_pos = (0, 0);
     let mut piece_to_move = None;
     while piece_to_move.is_none() {
@@ -49,9 +53,16 @@ fn get_next_valid_move_from_stdin(board : &Board, player_to_move : Player, stdin
         io::stdout().flush().expect("failed writing to stdout.");
 
         match get_position_from_stdin(stdin) {
-            Prompt::Valid(p) => {from_pos = p;},
-            Prompt::Invalid => {println!("Not a valid coordinate! must be a1 to g9."); continue;},
-            Prompt::Abort => {continue;}
+            Prompt::Valid(p) => {
+                from_pos = p;
+            }
+            Prompt::Invalid => {
+                println!("Not a valid coordinate! must be a1 to g9.");
+                continue;
+            }
+            Prompt::Abort => {
+                continue;
+            }
         };
 
         match board.get_piece_at(from_pos) {
@@ -81,7 +92,11 @@ fn get_next_valid_move_from_stdin(board : &Board, player_to_move : Player, stdin
         println!(
             "Selected {}. Options are: {} or q to select another piece.",
             piece_to_move.unwrap(),
-            possible_moves.iter().map(|m| format!("{}", coord_to_position(*m))).reduce(|accum,item| format!("{}, {}", accum, item)).unwrap()
+            possible_moves
+                .iter()
+                .map(|m| format!("{}", coord_to_position(*m)))
+                .reduce(|accum, item| format!("{}, {}", accum, item))
+                .unwrap()
         );
         print!("Where to move? ");
         io::stdout().flush().expect("failed writing to stdout.");
@@ -91,14 +106,12 @@ fn get_next_valid_move_from_stdin(board : &Board, player_to_move : Player, stdin
                 if possible_moves.iter().any(|m: &TileCoord| *m == p) {
                     to_pos = Some(p);
                 }
-            },
-            Prompt::Invalid => {
-                println!("Not a valid coordinate! must be a1 to g9."); 
-                continue;
-            },
-            Prompt::Abort => {
-                return get_next_valid_move_from_stdin(board, player_to_move, stdin)
             }
+            Prompt::Invalid => {
+                println!("Not a valid coordinate! must be a1 to g9.");
+                continue;
+            }
+            Prompt::Abort => return get_next_valid_move_from_stdin(board, player_to_move, stdin),
         };
     }
 
@@ -117,9 +130,14 @@ fn main() {
             .make_move(player_to_move, from_pos, to_pos)
             .expect("Somehow an invalid move got through.");
 
-        println!("{} {}",
+        println!(
+            "{} {}",
             winner.map_or_else(|| "".to_string(), |p| format!("{} won the game!", p)),
-            caps.map_or_else(|| "".to_string(), |(p,c)| format!("captured {}'s {}.", p, c)));
+            caps.map_or_else(
+                || "".to_string(),
+                |(p, c)| format!("captured {}'s {}.", p, c)
+            )
+        );
         if winner.is_some() {
             break;
         }
