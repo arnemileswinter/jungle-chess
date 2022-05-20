@@ -121,7 +121,8 @@ fn get_next_valid_move_from_stdin(
 fn main() {
     let mut b = Board::new();
 
-    let mut stdin = io::stdin().lock();
+    let stdin = io::stdin();
+    let mut stdin = stdin.lock();
     let mut player_to_move = Player::Player1;
 
     loop {
