@@ -31,6 +31,7 @@ In order to capture a piece, the following hierarchy holds:
     * Rat (🐭)
 
 Whereas the Elephant cannot capture the Rat (🐭) , but the Rat (🐭) captures the Elephant (🐘).
+
 The Rat (🐭) can not move to capture an Elephant (🐘) while emerging from water (🟦) (see #making-a-move). 
 
 Note, however, that if a piece is on an opponent's Trap (🥅), it can be captured by *any* piece.
@@ -39,7 +40,11 @@ Note, however, that if a piece is on an opponent's Trap (🥅), it can be captur
 ### Making a move (#making-a-move)
 
 Every piece moves freely on the grass (🟩).
+
 The Rat (🐭) is the only piece that can enter water (🟦).
+
 The Lion (🦁) and Tiger (🐯) can jump across the water (🟦) both horizontally and vertically, but only if the line is not blocked by a Rat (🐭).
+
 No Piece can enter their player's den(🏠).
+
 Naturally, a piece can only move onto an occupied square, if it can capture the occupant.
