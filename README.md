@@ -4,6 +4,8 @@
 
 Play Jungle Chess on an Emoji-Enabled Linux Terminal!
 
+![terminal screenshot](screenshot.png)
+
 ## How to play
 
 Each player tries to either: 
