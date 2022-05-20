@@ -47,8 +47,8 @@ pub enum Player {
 impl Display for Player {
     fn fmt(&self, frmtt: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
         frmtt.write_str(match self {
-            Player::Player1 => "player red",
-            _ => "player blue",
+            Player::Player1 => "player blue",
+            _ => "player red",
         })
     }
 }
@@ -209,9 +209,13 @@ impl Board {
 
     pub fn has_player_won(&self, who: Player) -> bool {
         match self.tiles[map_project(self.get_den_coord_of(get_other_player(who)))] {
-            (_, Some((p, _))) => true, // someone's at their den.
+            (_, Some((p, _))) => p == who, // someone's at their den.
             _ => self.get_player_pieces(get_other_player(who)).is_empty(), // other player has no more pieces.
         }
+    }
+
+    pub fn is_game_over(&self) -> bool {
+        self.has_player_won(Player::Player1) || self.has_player_won(Player::Player2)
     }
 
     pub fn get_piece_at(&self, at: TileCoord) -> Option<(Player, Piece)> {
@@ -248,7 +252,7 @@ impl Board {
         who: Player,
         from: TileCoord,
         to: TileCoord,
-    ) -> Result<(Board, Option<Player>, Option<(Player, Piece)>), &str> {
+    ) -> Result<(Board, Option<Player>, Option<(Player, Piece)>), String> {
         if self
             .get_next_moves(who)
             .iter()
@@ -285,7 +289,7 @@ impl Board {
 
             Ok((next_board, if *won { Some(who) } else { None }, *capped))
         } else {
-            Err("illegal move!")
+            Err(format!("illegal move! from {:?} to {:?} ", from, to))
         }
     }
 
@@ -333,10 +337,26 @@ impl Board {
                     (_, _, (Ground::Water, _)) => false,
                     // every piece can walk freely on grass.
                     (_, (Ground::Grass, _), (Ground::Grass, None)) => true,
-                    // if grass is occupied, a piece can only move towards with capture.
-                    (_, (Ground::Grass, _), (Ground::Grass, Some((other_player, other_piece)))) => {
-                        who != other_player && p.beats(other_piece)
+                    // if grass is occupied, a piece can only move towards with capture of opponent piece.
+                    (
+                        _,
+                        (Ground::Grass | Ground::Trap(_), _),
+                        (Ground::Grass, Some((other_player, other_piece))),
+                    ) => who != other_player && p.beats(other_piece),
+                    // if trap is occupied, a piece can only move towards with capture of opponent piece.
+                    (_, _, (Ground::Trap(trap_owner), Some((piece_owner, piece)))) => {
+                        if trap_owner == piece_owner {
+                            if trap_owner == who {
+                                // cannot capture our own pieces in traps.
+                                false
+                            } else {
+                                true // p.beats(piece)
+                            }
+                        } else {
+                            false
+                        }
                     }
+                    // can always enter the opponent's den, but not our own.
                     (_, _, (Ground::Den(other_player), _)) => other_player != who,
                     (_, _, _) => true,
                 }
@@ -396,8 +416,7 @@ impl Board {
 
         pieces
             .iter()
-            .map(|(p, c)| (p, c, next_steps(*p, *c)))
-            .map(|(p, c, d)| (*p, *c, d))
+            .map(|(p, c)| (*p, *c, next_steps(*p, *c)))
             .collect()
     }
 }
@@ -405,8 +424,8 @@ impl Board {
 impl Display for Board {
     fn fmt(&self, frmtt: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
         let player_colored = |p, s: &str| match p {
-            Player::Player1 => format!("\x1b[41m{}\x1b[0m", s.to_string()),
-            Player::Player2 => format!("\x1b[46m{}\x1b[0m", s.to_string()),
+            Player::Player1 => format!("\x1b[46m{}\x1b[0m", s.to_string()),
+            Player::Player2 => format!("\x1b[41m{}\x1b[0m", s.to_string()),
         };
 
         let tile_to_str = |t: &Tile| match *t {

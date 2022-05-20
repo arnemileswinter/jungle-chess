@@ -1,13 +1,37 @@
+mod ai;
 mod board;
+
+use clap::Parser;
 
 use std::io::{self, Read, Write};
 
-use crate::board::{get_other_player, Board, Player, TileCoord};
+use board::Piece;
+
+use crate::{
+    ai::{get_ai_move},
+    board::{get_other_player, Board, Player, TileCoord},
+};
+
+const AI_HORIZON : i32 = 3;
 
 enum Prompt<T> {
     Valid(T),
     Invalid,
     Abort,
+}
+
+fn print_turn(board:&Board,winner : Option<Player>, caps : Option<(Player,Piece)>){
+     println!(
+            "{} {}",
+            winner.map_or_else(
+                || "".to_string(),
+                |p| format!("{}\n{} won the game!", board, p)
+            ),
+            caps.map_or_else(
+                || "".to_string(),
+                |(p, c)| format!("captured {}'s {}.", p, c)
+            )
+        );
 }
 
 fn get_position_from_stdin(stdin: &mut io::StdinLock) -> Prompt<TileCoord> {
@@ -48,7 +72,6 @@ fn get_next_valid_move_from_stdin(
     let mut from_pos = (0, 0);
     let mut piece_to_move = None;
     while piece_to_move.is_none() {
-        println!("{}", board);
         print!("{} to move. Select your piece: ", player_to_move);
         io::stdout().flush().expect("failed writing to stdout.");
 
@@ -118,7 +141,8 @@ fn get_next_valid_move_from_stdin(
     (from_pos, to_pos.unwrap())
 }
 
-fn main() {
+
+fn human_game() {
     let mut b = Board::new();
 
     let stdin = io::stdin();
@@ -126,24 +150,69 @@ fn main() {
     let mut player_to_move = Player::Player1;
 
     loop {
+        println!("{}", b);
         let (from_pos, to_pos) = get_next_valid_move_from_stdin(&b, player_to_move, &mut stdin);
-        let (new_b, winner, caps) = b
-            .make_move(player_to_move, from_pos, to_pos)
-            .expect("Somehow an invalid move got through.");
+        let (new_b, winner, caps) = b.make_move(player_to_move, from_pos, to_pos).unwrap(); // (|| panic!("Somehow an invalid move got through, namely {} to {}.", coord_to_position(from_pos), coord_to_position(to_pos)));
+        print_turn(&b,winner,caps);
 
-        println!(
-            "{} {}",
-            winner.map_or_else(|| "".to_string(), |p| format!("{}\n{} won the game!", new_b, p)),
-            caps.map_or_else(
-                || "".to_string(),
-                |(p, c)| format!("captured {}'s {}.", p, c)
-            )
-        );
         if winner.is_some() {
             break;
         }
-        b = new_b;
 
+        b = new_b;
         player_to_move = get_other_player(player_to_move);
+    }
+}
+
+fn ai_game(human_player : Player){
+    let mut b = Board::new();
+    let stdin = io::stdin();
+    let mut stdin = stdin.lock();
+    let mut player_to_move = Player::Player1;
+
+    loop {
+        if player_to_move == human_player {
+            println!("{}", b);
+        }
+
+        let (from_pos, to_pos) = 
+            if human_player == player_to_move {
+                get_next_valid_move_from_stdin(&b, human_player, &mut stdin)
+            } else { 
+                let (f,t) = get_ai_move(&b, player_to_move, AI_HORIZON).unwrap();
+                println!("Computer played {} to {}.", coord_to_position(f), coord_to_position(t));
+                (f,t)
+            };
+        let (new_b, winner, caps) = b.make_move(player_to_move, from_pos, to_pos).unwrap(); // (|| panic!("Somehow an invalid move got through, namely {} to {}.", coord_to_position(from_pos), coord_to_position(to_pos)));
+        print_turn(&b,winner,caps);
+
+        if winner.is_some() {
+            break;
+        }
+
+        b = new_b;
+        player_to_move = get_other_player(player_to_move);
+    }
+}
+
+#[derive(Parser,Debug)]
+#[clap(name = "Jungle Chess")]
+#[clap(author = "Arne Winter https://github.com/arnemileswinter")]
+#[clap(version,about,long_about=None)]
+struct Cli {
+    /// To play against AI.
+    #[clap(short,long)]
+    ai:bool,
+    /// To start as red in AI match.
+    #[clap(short,long)]
+    red:bool,
+}
+
+fn main() {
+    let cli = Cli::parse();
+    if cli.ai {
+        ai_game(if cli.red {Player::Player2} else {Player::Player1});
+    } else {
+        human_game();
     }
 }
