@@ -189,6 +189,7 @@ fn init_map() -> Tiles {
 
     return tiles;
 }
+
 pub fn is_coord_in_bounds((x, y): TileCoord) -> bool {
     x >= 0 && x < (TILES_W as isize) && y >= 0 && y < (TILES_H as isize)
 }
@@ -197,6 +198,20 @@ impl Board {
     pub fn new() -> Self {
         let tiles = init_map();
         Board { tiles: tiles }
+    }
+
+    pub fn get_den_coord_of(&self, who: Player) -> TileCoord {
+        match who {
+            Player::Player1 => (3, 0),
+            Player::Player2 => (3, (TILES_H - 1) as isize),
+        }
+    }
+
+    pub fn has_player_won(&self, who: Player) -> bool {
+        match self.tiles[map_project(self.get_den_coord_of(get_other_player(who)))] {
+            (_, Some((p, _))) => true, // someone's at their den.
+            _ => self.get_player_pieces(get_other_player(who)).is_empty(), // other player has no more pieces.
+        }
     }
 
     pub fn get_piece_at(&self, at: TileCoord) -> Option<(Player, Piece)> {
@@ -308,8 +323,12 @@ impl Board {
                 ) {
                     // rats beat other rats in water.
                     (Piece::Rat, (Ground::Water, _), (Ground::Water, _)) => true,
+                    // rats can enter water if unoccupied.
+                    (Piece::Rat, (Ground::Grass, _), (Ground::Water, None)) => true,
                     // rats dont beat other rats if coming from grass to water.
                     (Piece::Rat, (Ground::Grass, _), (Ground::Water, Some(_))) => false,
+                    // rats cannot emerge from water if occupied.
+                    (Piece::Rat, (Ground::Water, _), (Ground::Grass, Some(_))) => false,
                     // other pieces cannot enter water.
                     (_, _, (Ground::Water, _)) => false,
                     // every piece can walk freely on grass.
