@@ -1,20 +1,74 @@
-use crate::board::{get_other_player, Board, Player, Piece, TileCoord};
+use crate::board::{get_other_player, Board, Piece, Player, TileCoord};
 
-fn manhattan_distance((x1,y1) : TileCoord, (x2,y2) : TileCoord) -> isize {
-    (x1-x2).abs() + (y1-y2).abs()
+fn manhattan_distance((x1, y1): TileCoord, (x2, y2): TileCoord) -> isize {
+    (x1 - x2).abs() + (y1 - y2).abs()
 }
 
-/// Larger means better.
-pub fn estimate(who: Player, board: &Board) -> i32 {
+#[derive(PartialEq, PartialOrd, Eq, Ord, Clone, Copy, Debug)]
+pub enum Evaluation {
+    MinusInfinity,
+    Evaluation(i32),
+    PlusInfinity,
+}
+
+pub fn evaluate_board(board:&Board, who: Player) -> Evaluation {
     if board.has_player_won(who) {
-        return 0;
+        return Evaluation::PlusInfinity;
+    } else if board.has_player_won(get_other_player(who)) {
+        return Evaluation::MinusInfinity;
     }
-    
+
+    let our_pieces = board.get_player_pieces(who);
+    let our_piece_values = our_pieces.iter().fold(0, |acc,p| acc + (match *p {(Piece::Rat,_) => 7, (p,_) => p as i32}));
+   
     let other_den_coord = board.get_den_coord_of(get_other_player(who));
-    let pieces = board.get_player_pieces(who);
-    (pieces
-     .iter()
-     .map(|(p, piece_coord)| manhattan_distance(other_den_coord, *piece_coord) * -(*p as isize + 1))
-     .min()
-     .unwrap()) as i32
+    let combined_den_distances= our_pieces.iter().map(|(_,pos)| manhattan_distance(*pos, other_den_coord) as i32).fold(0,|a,b| a+b);//.expect("If no distance was here, we couldn't have won or lost.");
+
+    Evaluation::Evaluation(our_piece_values - combined_den_distances)
+}
+
+fn minimax(board:&Board, who: Player, horizon : i32, maxing:bool) -> Evaluation {
+    if horizon <= 0 || board.is_game_over() {
+        return evaluate_board(board, who);
+    }
+
+    if maxing {
+        let mut max_eval = Evaluation::MinusInfinity;
+        for (from, to) in board.get_next_moves(who).iter().flat_map(move |(_,from,tos)| tos.iter().map(|to| (*from,*to))) {
+            let next_board = board.make_move(who, from, to).unwrap().0;
+            max_eval = std::cmp::max(max_eval, minimax(&next_board, who, horizon - 1, false))
+        }
+        return max_eval;
+    } else {
+        let mut min_eval = Evaluation::PlusInfinity;
+        let other = get_other_player(who);
+        for (from, to) in board.get_next_moves(other).iter().flat_map(move |(_,from,tos)| tos.iter().map(|to| (*from,*to))) {
+            let next_board = board.make_move(other, from, to).unwrap().0;
+            min_eval = std::cmp::min(min_eval, minimax(&next_board, who, horizon - 1, true))
+        }
+        return min_eval;
+    }
+}
+
+
+pub fn get_ai_move(board: &Board, who: Player, horizon : i32) -> Option<(TileCoord, TileCoord)> {
+    board
+        .get_next_moves(who)
+        .iter()
+        .flat_map(|(_, from, tos)| tos.iter().map(move |to| (*from, *to)))
+        .map(|(from,to)| (from,to,minimax(&board.make_move(who, from, to).unwrap().0, who, horizon, true)))
+        .max_by(|(_,_,e1),(_,_,e2)| e1.cmp(e2))
+        .map(|(from,to,_)| (from,to))
+}
+
+#[cfg(test)]
+mod test{
+    use super::*;
+
+    #[test]
+    fn test_evaluation_ord(){
+        assert!(Evaluation::MinusInfinity < Evaluation::Evaluation(1));
+        assert!(Evaluation::Evaluation(-1) < Evaluation::Evaluation(1));
+        assert!(Evaluation::Evaluation(2) < Evaluation::PlusInfinity);
+    }
 }
