@@ -27,7 +27,7 @@ Player's play in turns. Each piece can move freely on the ground.
 
 ### Capturing Pieces
 
-Every piece can capture another piece of equal rank.
+Every piece can capture another piece of equal or lower rank.
 
 In order to capture a piece, the following hierarchy holds:
 
