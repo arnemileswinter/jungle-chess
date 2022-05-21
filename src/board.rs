@@ -1,4 +1,4 @@
-use std::{fmt::{Display, Formatter}};
+use std::fmt::{Display, Formatter};
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum Piece {
@@ -105,7 +105,7 @@ fn init_map() -> Tiles {
             continue;
         }
         for y in 3..(TILES_H - 1 - 2) {
-            put_water(x.clone() as isize, y.clone() as isize);
+            put_water(x as isize, y as isize);
         }
     }
     // add player's pieces.
@@ -178,9 +178,8 @@ impl Board {
         if !is_coord_in_bounds(at) {
             None
         } else {
-            match self.tiles[map_project(at)] {
-                (_, o) => o,
-            }
+            let (_, o) = self.tiles[map_project(at)];
+            o
         }
     }
 
@@ -222,22 +221,18 @@ impl Board {
             let mut capped = Box::new(None::<(Player, Piece)>);
             let mut next_board = self.clone();
 
-            next_board.tiles[map_project(from)] = match self.tiles[map_project(from)] {
-                (g, _) => (g, None),
+            next_board.tiles[map_project(from)] = {
+                let (g, _) = self.tiles[map_project(from)];
+                (g, None)
             };
-            next_board.tiles[map_project(to)] = match self.tiles[map_project(to)] {
-                (g, optional_other_piece) => {
-                    match g {
-                        Ground::Den(other) => {
-                            *won = who != other; // win - player entered opponent's den.
-                        }
-                        _ => (),
-                    };
-                    *capped = optional_other_piece;
-                    (g, moving_piece)
-                }
+            next_board.tiles[map_project(to)] = {
+                let (g, optional_other_piece) = self.tiles[map_project(to)];
+                if let Ground::Den(other) = g {
+                    *won = who != other; // win - player entered opponent's den.
+                };
+                *capped = optional_other_piece;
+                (g, moving_piece)
             };
-
             *won = *won
                 || next_board
                     .get_player_pieces(get_other_player(who))
@@ -258,19 +253,11 @@ impl Board {
         let left_of = |(x, y): TileCoord| -> TileCoord { (x - 1, y) };
         let right_of = |(x, y): TileCoord| -> TileCoord { (x + 1, y) };
 
-        let is_water_at = |c| {
-            is_coord_in_bounds(c)
-                && match self.tiles[map_project(c)] {
-                    (Ground::Water, _) => true,
-                    _ => false,
-                }
-        };
+        let is_water_at =
+            |c| is_coord_in_bounds(c) && matches!(self.tiles[map_project(c)], (Ground::Water, _));
         let is_rat_at = |c| {
             is_coord_in_bounds(c)
-                && match self.tiles[map_project(c)] {
-                    (_, Some((_, Piece::Rat))) => true,
-                    _ => false,
-                }
+                && matches!(self.tiles[map_project(c)], (_, Some((_, Piece::Rat))))
         };
 
         let can_step_from_to = |p: Piece, from, to| {
@@ -317,46 +304,42 @@ impl Board {
                 [up_of(c), left_of(c), right_of(c), down_of(c)]
                     .iter()
                     .filter(|cc: &&TileCoord| can_step_from_to(p, c, **cc))
-                    .map(|c| *c)
+                    .copied()
                     .collect()
             };
 
             let mut steps: Vec<TileCoord> = generic_neighbors(p, c);
             match p {
                 Piece::Tiger | Piece::Lion => {
-                    if is_water_at(down_of(c)) {
-                        if !is_rat_at(down_of(c))
-                            && !is_rat_at(down_of(down_of(c)))
-                            && !is_rat_at(down_of(down_of(down_of(c))))
-                            && can_step_from_to(p, c, down_of(down_of(down_of(down_of(c)))))
-                        {
-                            steps.push(down_of(down_of(down_of(down_of(c)))));
-                        }
+                    if is_water_at(down_of(c))
+                        && !is_rat_at(down_of(c))
+                        && !is_rat_at(down_of(down_of(c)))
+                        && !is_rat_at(down_of(down_of(down_of(c))))
+                        && can_step_from_to(p, c, down_of(down_of(down_of(down_of(c)))))
+                    {
+                        steps.push(down_of(down_of(down_of(down_of(c)))));
                     }
-                    if is_water_at(up_of(c)) {
-                        if !is_rat_at(up_of(c))
-                            && !is_rat_at(up_of(up_of(c)))
-                            && !is_rat_at(up_of(up_of(up_of(c))))
-                            && can_step_from_to(p, c, up_of(up_of(up_of(up_of(c)))))
-                        {
-                            steps.push(up_of(up_of(up_of(up_of(c)))));
-                        }
+                    if is_water_at(up_of(c))
+                        && !is_rat_at(up_of(c))
+                        && !is_rat_at(up_of(up_of(c)))
+                        && !is_rat_at(up_of(up_of(up_of(c))))
+                        && can_step_from_to(p, c, up_of(up_of(up_of(up_of(c)))))
+                    {
+                        steps.push(up_of(up_of(up_of(up_of(c)))));
                     }
-                    if is_water_at(left_of(c)) {
-                        if !is_rat_at(left_of(c))
-                            && !is_rat_at(left_of(left_of(c)))
-                            && can_step_from_to(p, c, left_of(left_of(left_of(c))))
-                        {
-                            steps.push(left_of(left_of(left_of(c))));
-                        }
+                    if is_water_at(left_of(c))
+                        && !is_rat_at(left_of(c))
+                        && !is_rat_at(left_of(left_of(c)))
+                        && can_step_from_to(p, c, left_of(left_of(left_of(c))))
+                    {
+                        steps.push(left_of(left_of(left_of(c))));
                     }
-                    if is_water_at(right_of(c)) {
-                        if !is_rat_at(right_of(c))
-                            && !is_rat_at(right_of(right_of(c)))
-                            && can_step_from_to(p, c, right_of(right_of(right_of(c))))
-                        {
-                            steps.push(right_of(right_of(right_of(c))));
-                        }
+                    if is_water_at(right_of(c))
+                        && !is_rat_at(right_of(c))
+                        && !is_rat_at(right_of(right_of(c)))
+                        && can_step_from_to(p, c, right_of(right_of(right_of(c))))
+                    {
+                        steps.push(right_of(right_of(right_of(c))));
                     }
                 }
                 _ => (),
@@ -372,7 +355,16 @@ impl Board {
     }
 
     pub fn iter(&self) -> BoardIterator<'_> {
-        BoardIterator {board : self, idx : 0}
+        BoardIterator {
+            board: self,
+            idx: 0,
+        }
+    }
+}
+
+impl Default for Board {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -386,15 +378,15 @@ impl<'a> IntoIterator for &'a Board {
 }
 
 pub struct BoardIterator<'a> {
-    board : &'a Board,
-    idx : usize,
+    board: &'a Board,
+    idx: usize,
 }
 
 impl<'a> Iterator for BoardIterator<'a> {
     type Item = (TileCoord, Tile);
 
     fn next(&mut self) -> Option<Self::Item> {
-        let result = if self.idx >= TILES_COUNT{
+        let result = if self.idx >= TILES_COUNT {
             None
         } else {
             Some((map_unproject(self.idx), self.board.tiles[self.idx]))
@@ -511,15 +503,21 @@ mod tests {
     fn iterates() {
         let b = Board::new();
         for (coord, t) in b.into_iter() {
-            assert_eq!(coord, (0,0));
+            assert_eq!(coord, (0, 0));
             assert_eq!(t, (Ground::Grass, Some((Player::Player1, Piece::Lion))));
             break;
         }
 
-        for _ in b.into_iter() { 
+        for _ in b.into_iter() {
             // should terminate.
         }
 
-        assert_eq!(b.iter().last(), Some(((6,8), (Ground::Grass, Some((Player::Player2, Piece::Lion))))));
+        assert_eq!(
+            b.iter().last(),
+            Some((
+                (6, 8),
+                (Ground::Grass, Some((Player::Player2, Piece::Lion)))
+            ))
+        );
     }
 }

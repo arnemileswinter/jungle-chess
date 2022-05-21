@@ -25,11 +25,11 @@ pub fn evaluate_board(board: &Board, who: Player) -> Evaluation {
     let our_piece_values = our_pieces.iter().fold(0, |acc, p| acc + (p.0 as i32) + 1);
 
     let other_den_coord = board.get_den_coord_of(get_other_player(who));
-    let combined_den_distances = our_pieces
+    let combined_den_distances: i32 = our_pieces
         .iter()
         .map(|(_, pos)| manhattan_distance(*pos, other_den_coord) as i32)
-        .fold(0, |a, b| a + b); //.expect("If no distance was here, we couldn't have won or lost.");
-                                // let shortest_den_distance= our_pieces.iter().map(|(_,pos)| manhattan_distance(*pos, other_den_coord) as i32).min().expect("If no distance was here, we couldn't have won or lost.");
+        .sum(); //.expect("If no distance was here, we couldn't have won or lost.");
+                // let shortest_den_distance= our_pieces.iter().map(|(_,pos)| manhattan_distance(*pos, other_den_coord) as i32).min().expect("If no distance was here, we couldn't have won or lost.");
 
     Evaluation::Evaluation(our_piece_values * 80 - combined_den_distances)
 }
@@ -64,7 +64,7 @@ fn minimax(
                 break;
             }
         }
-        return max_eval;
+        max_eval
     } else {
         let mut min_eval = Evaluation::PlusInfinity;
         let other = get_other_player(who);
@@ -81,7 +81,7 @@ fn minimax(
                 break;
             }
         }
-        return min_eval;
+        min_eval
     }
 }
 

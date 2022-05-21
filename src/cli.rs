@@ -1,8 +1,8 @@
+use clap::Parser;
 use junglechess::{
     ai::get_ai_move,
     board::{get_other_player, Board, Piece, Player, TileCoord},
 };
-use clap::Parser;
 use std::io::{self, Read, Write};
 
 enum Prompt<T> {
@@ -30,7 +30,7 @@ fn get_position_from_stdin(stdin: &mut io::StdinLock) -> Prompt<TileCoord> {
 
     match in_buf[0] {
         b'q' | b'h' => return Prompt::Abort, // b'c' does the same as 'c' as u8, but it cannot crash on non ascii characters.
-        b'a'..=b'g' => (),            // Handle all valid input and do nothing
+        b'a'..=b'g' => (),                   // Handle all valid input and do nothing
         _ => {
             // Catch any input left, which is by definition invalid
             println!("Did not understand x coordinate. Must be a lower-case letter.");
@@ -89,7 +89,7 @@ fn get_next_valid_move_from_stdin(
         .get_next_moves(player_to_move)
         .iter()
         .filter(|(p, _, _)| piece_to_move.unwrap() == *p)
-        .flat_map(|(_, _, ms)| -> Vec<TileCoord> { ms.iter().map(|m| *m).collect() })
+        .flat_map(|(_, _, ms)| -> Vec<TileCoord> { ms.to_vec() })
         .collect();
     if possible_moves.is_empty() {
         println!("Cannot move that piece! Select another.");
@@ -102,7 +102,7 @@ fn get_next_valid_move_from_stdin(
             piece_to_move.unwrap(),
             possible_moves
                 .iter()
-                .map(|m| format!("{}", coord_to_position(*m)))
+                .map(|m| coord_to_position(*m))
                 .reduce(|accum, item| format!("{}, {}", accum, item))
                 .unwrap()
         );
@@ -139,18 +139,17 @@ fn human_game() {
         let (new_b, winner, caps) = b.make_move(player_to_move, from_pos, to_pos).unwrap(); // (|| panic!("Somehow an invalid move got through, namely {} to {}.", coord_to_position(from_pos), coord_to_position(to_pos)));
         print_turn(&b, winner, caps);
 
-
         if winner.is_some() {
             println!("{}", new_b);
             break;
         }
- 
+
         b = new_b;
         player_to_move = get_other_player(player_to_move);
     }
 }
 
-fn ai_game(human_player: Player, ai_horizon : i32) {
+fn ai_game(human_player: Player, ai_horizon: i32) {
     let mut b = Board::new();
     let stdin = io::stdin();
     let mut stdin = stdin.lock();
@@ -204,18 +203,21 @@ struct Cli {
     /// Smaller values make the AI easier to beat.
     /// Larger values make the game slower.
     /// The default seems to work good.
-    #[clap(short,long,requires="ai_group",default_value_t=3)]
+    #[clap(short, long, requires = "ai_group", default_value_t = 3)]
     horizon: u32,
 }
 
 fn main() {
     let cli = Cli::parse();
     if cli.ai {
-        ai_game(if cli.red {
-            Player::Player2
-        } else {
-            Player::Player1
-        }, cli.horizon as i32);
+        ai_game(
+            if cli.red {
+                Player::Player2
+            } else {
+                Player::Player1
+            },
+            cli.horizon as i32,
+        );
     } else {
         human_game();
     }
