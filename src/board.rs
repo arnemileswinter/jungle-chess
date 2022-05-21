@@ -23,16 +23,17 @@ impl Piece {
 }
 
 impl Display for Piece {
-    fn fmt(&self, frmtt: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
-        frmtt.write_str(match self {
-            Piece::Rat => ("🐭"),
-            Piece::Cat => ("🐱"),
-            Piece::Dog => ("🐕"),
-            Piece::Wolf => ("🐺"),
-            Piece::Leopard => ("🐆"),
-            Piece::Tiger => ("🐯"),
-            Piece::Lion => ("🦁"),
-            Piece::Elephant => ("🐘"),
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
+        // f is the common name here, only renaming it because frmtt was flagged as misspelled in my IDE
+        f.write_str(match self {
+            Piece::Rat => "🐭",
+            Piece::Cat => "🐱",
+            Piece::Dog => "🐕",
+            Piece::Wolf => "🐺",
+            Piece::Leopard => "🐆",
+            Piece::Tiger => "🐯",
+            Piece::Lion => "🦁",
+            Piece::Elephant => "🐘",
         })
     }
 }
@@ -45,8 +46,8 @@ pub enum Player {
 }
 
 impl Display for Player {
-    fn fmt(&self, frmtt: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
-        frmtt.write_str(match self {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
+        f.write_str(match self {
             Player::Player1 => "player blue",
             _ => "player red",
         })
@@ -108,78 +109,34 @@ fn init_map() -> Tiles {
         }
     }
     // add player's pieces.
-    let mut put_piece = |x: usize, y: usize, who, what| {
-        tiles[map_project((x as isize, y as isize))] = (Ground::Grass, Some((who, what)));
+    // Because the index pattern was identical for the two players it can be shrinked down a lot.
+    let mut put_piece = |x: usize, y: usize, what| {
+        tiles[map_project((x as isize, y as isize))] =
+            (Ground::Grass, Some((Player::Player1, what)));
+        tiles[map_project(((TILES_W - 1 - x) as isize, (TILES_H - 1 - y) as isize))] =
+            (Ground::Grass, Some((Player::Player2, what)));
     };
 
-    put_piece(0, 0, Player::Player1, Piece::Lion);
-    put_piece(6, 0, Player::Player1, Piece::Tiger);
-    put_piece(1, 1, Player::Player1, Piece::Dog);
-    put_piece(5, 1, Player::Player1, Piece::Cat);
-    put_piece(0, 2, Player::Player1, Piece::Rat);
-    put_piece(2, 2, Player::Player1, Piece::Leopard);
-    put_piece(4, 2, Player::Player1, Piece::Wolf);
-    put_piece(6, 2, Player::Player1, Piece::Elephant);
-
-    put_piece(
-        TILES_W - 1 - 0,
-        TILES_H - 1 - 0,
-        Player::Player2,
-        Piece::Lion,
-    );
-    put_piece(
-        TILES_W - 1 - 6,
-        TILES_H - 1 - 0,
-        Player::Player2,
-        Piece::Tiger,
-    );
-    put_piece(
-        TILES_W - 1 - 1,
-        TILES_H - 1 - 1,
-        Player::Player2,
-        Piece::Dog,
-    );
-    put_piece(
-        TILES_W - 1 - 5,
-        TILES_H - 1 - 1,
-        Player::Player2,
-        Piece::Cat,
-    );
-    put_piece(
-        TILES_W - 1 - 0,
-        TILES_H - 1 - 2,
-        Player::Player2,
-        Piece::Rat,
-    );
-    put_piece(
-        TILES_W - 1 - 2,
-        TILES_H - 1 - 2,
-        Player::Player2,
-        Piece::Leopard,
-    );
-    put_piece(
-        TILES_W - 1 - 4,
-        TILES_H - 1 - 2,
-        Player::Player2,
-        Piece::Wolf,
-    );
-    put_piece(
-        TILES_W - 1 - 6,
-        TILES_H - 1 - 2,
-        Player::Player2,
-        Piece::Elephant,
-    );
+    put_piece(0, 0, Piece::Lion);
+    put_piece(6, 0, Piece::Tiger);
+    put_piece(1, 1, Piece::Dog);
+    put_piece(5, 1, Piece::Cat);
+    put_piece(0, 2, Piece::Rat);
+    put_piece(2, 2, Piece::Leopard);
+    put_piece(4, 2, Piece::Wolf);
+    put_piece(6, 2, Piece::Elephant);
 
     // add player traps
-    let mut put_trap = |x: usize, y: usize, who| {
-        tiles[map_project((x as isize, y as isize))] = (Ground::Trap(who), None);
+    // Same trick as above
+    let mut put_trap = |x: usize, y: usize| {
+        tiles[map_project((x as isize, y as isize))] = (Ground::Trap(Player::Player1), None);
+        tiles[map_project((x as isize, (TILES_H - 1 - y) as isize))] =
+            (Ground::Trap(Player::Player2), None);
     };
-    put_trap(2, 0, Player::Player1);
-    put_trap(4, 0, Player::Player1);
-    put_trap(3, 1, Player::Player1);
-    put_trap(2, TILES_H - 1 - 0, Player::Player2);
-    put_trap(4, TILES_H - 1 - 0, Player::Player2);
-    put_trap(3, TILES_H - 1 - 1, Player::Player2);
+    put_trap(2, 0);
+    put_trap(4, 0);
+    put_trap(3, 1);
+
     // add player dens
     let mut put_den = |x: usize, y: usize, who| {
         tiles[map_project((x as isize, y as isize))] = (Ground::Den(who), None);
@@ -187,7 +144,7 @@ fn init_map() -> Tiles {
     put_den(3, 0, Player::Player1);
     put_den(3, TILES_H - 1, Player::Player2);
 
-    return tiles;
+    tiles
 }
 
 pub fn is_coord_in_bounds((x, y): TileCoord) -> bool {
@@ -196,8 +153,7 @@ pub fn is_coord_in_bounds((x, y): TileCoord) -> bool {
 
 impl Board {
     pub fn new() -> Self {
-        let tiles = init_map();
-        Board { tiles: tiles }
+        Board { tiles: init_map() }
     }
 
     pub fn get_den_coord_of(&self, who: Player) -> TileCoord {
@@ -239,7 +195,7 @@ impl Board {
             })
             .map(|(t, idx)| match t {
                 (_, Some((_, piece))) => (*piece, map_unproject(idx)),
-                _ => panic!("Match should've been filtered out."),
+                _ => unreachable!(), // This macro is a nice way of saying that code should not be possible to be reached
             })
             .collect()
     }
@@ -329,7 +285,7 @@ impl Board {
                     (Piece::Rat, (Ground::Water, _), (Ground::Water, _)) => true,
                     // rats can enter water if unoccupied.
                     (Piece::Rat, (Ground::Grass, _), (Ground::Water, None)) => true,
-                    // rats dont beat other rats if coming from grass to water.
+                    // rats don't beat other rats if coming from grass to water.
                     (Piece::Rat, (Ground::Grass, _), (Ground::Water, Some(_))) => false,
                     // rats cannot emerge from water if occupied.
                     (Piece::Rat, (Ground::Water, _), (Ground::Grass, Some(_))) => false,
@@ -424,8 +380,8 @@ impl Board {
 impl Display for Board {
     fn fmt(&self, frmtt: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
         let player_colored = |p, s: &str| match p {
-            Player::Player1 => format!("\x1b[46m{}\x1b[0m", s.to_string()),
-            Player::Player2 => format!("\x1b[41m{}\x1b[0m", s.to_string()),
+            Player::Player1 => format!("\x1b[46m{}\x1b[0m", s),
+            Player::Player2 => format!("\x1b[41m{}\x1b[0m", s),
         };
 
         let tile_to_str = |t: &Tile| match *t {
