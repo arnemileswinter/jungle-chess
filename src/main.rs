@@ -38,7 +38,7 @@ fn get_position_from_stdin(stdin: &mut io::StdinLock) -> Prompt<TileCoord> {
         .expect("failed reading into buffer.");
 
     match in_buf[0] {
-        b'h' => return Prompt::Abort, // b'c' does the same as 'c' as u8, but it cannot crash on non ascii characters.
+        b'q' | b'h' => return Prompt::Abort, // b'c' does the same as 'c' as u8, but it cannot crash on non ascii characters.
         b'a'..=b'g' => (),            // Handle all valid input and do nothing
         _ => {
             // Catch any input left, which is by definition invalid
@@ -46,7 +46,7 @@ fn get_position_from_stdin(stdin: &mut io::StdinLock) -> Prompt<TileCoord> {
             return Prompt::Invalid;
         }
     }
-    if in_buf[1].is_ascii_digit() {
+    if !in_buf[1].is_ascii_digit() {
         // There are a ton of nice helper functions see: https://doc.rust-lang.org/std/primitive.u8.html
         println!("Did not understand y coordinate. Must be a digit.");
         return Prompt::Invalid;
