@@ -199,10 +199,10 @@ struct Cli {
     /// To play against AI.
     // By creating a group and requiring that group you make sure none can pass `red` without passing `ai`.
     // Arguably in this case that is OP, but it is a nice feature when you need it ;-)
-    #[clap(short, long, group = "ai")]
+    #[clap(short, long, group = "ai_group")]
     ai: bool,
     /// To start as red in AI match.
-    #[clap(short, long, requires = "ai")]
+    #[clap(short, long, requires = "ai_group")]
     red: bool,
 }
 
