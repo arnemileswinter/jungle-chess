@@ -1,4 +1,4 @@
-use std::fmt::{Display, Formatter};
+use std::{fmt::{Display, Formatter}};
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum Piece {
@@ -62,7 +62,7 @@ pub fn get_other_player(p: Player) -> Player {
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
-enum Ground {
+pub enum Ground {
     Grass,
     Water,
     Trap(Player),
@@ -370,8 +370,39 @@ impl Board {
             .map(|(p, c)| (*p, *c, next_steps(*p, *c)))
             .collect()
     }
+
+    pub fn iter(&self) -> BoardIterator<'_> {
+        BoardIterator {board : self, idx : 0}
+    }
 }
 
+impl<'a> IntoIterator for &'a Board {
+    type Item = (TileCoord, Tile);
+    type IntoIter = BoardIterator<'a>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.iter()
+    }
+}
+
+pub struct BoardIterator<'a> {
+    board : &'a Board,
+    idx : usize,
+}
+
+impl<'a> Iterator for BoardIterator<'a> {
+    type Item = (TileCoord, Tile);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let result = if self.idx >= TILES_COUNT{
+            None
+        } else {
+            Some((map_unproject(self.idx), self.board.tiles[self.idx]))
+        };
+        self.idx += 1;
+        result
+    }
+}
 impl Display for Board {
     fn fmt(&self, frmtt: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
         let player_colored = |p, s: &str| match p {
@@ -474,5 +505,21 @@ mod tests {
         assert!(Piece::Rat.beats(Piece::Elephant));
         assert!(Piece::Cat.beats(Piece::Rat));
         assert!(!(Piece::Elephant.beats(Piece::Rat)));
+    }
+
+    #[test]
+    fn iterates() {
+        let b = Board::new();
+        for (coord, t) in b.into_iter() {
+            assert_eq!(coord, (0,0));
+            assert_eq!(t, (Ground::Grass, Some((Player::Player1, Piece::Lion))));
+            break;
+        }
+
+        for _ in b.into_iter() { 
+            // should terminate.
+        }
+
+        assert_eq!(b.iter().last(), Some(((6,8), (Ground::Grass, Some((Player::Player2, Piece::Lion))))));
     }
 }
