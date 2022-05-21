@@ -1,16 +1,9 @@
-mod ai;
-mod board;
-
-use clap::Parser;
-
-use std::io::{self, Read, Write};
-
-use board::Piece;
-
-use crate::{
+use junglechess::{
     ai::get_ai_move,
-    board::{get_other_player, Board, Player, TileCoord},
+    board::{get_other_player, Board, Piece, Player, TileCoord},
 };
+use clap::Parser;
+use std::io::{self, Read, Write};
 
 enum Prompt<T> {
     Valid(T),

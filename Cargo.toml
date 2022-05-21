@@ -3,6 +3,14 @@ name = "jungle-chess"
 version = "1.1.0"
 edition = "2021"
 
+[lib]
+name = "junglechess"
+path = "src/lib.rs"
+
+[[bin]]
+name = "junglechess"
+path = "src/cli.rs"
+
 [dependencies]
 clap = { version = "3.1.18", features = ["derive"] }
 rand = "0.8.5"
