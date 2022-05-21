@@ -12,8 +12,6 @@ use crate::{
     board::{get_other_player, Board, Player, TileCoord},
 };
 
-const AI_HORIZON: i32 = 3;
-
 enum Prompt<T> {
     Valid(T),
     Invalid,
@@ -148,16 +146,18 @@ fn human_game() {
         let (new_b, winner, caps) = b.make_move(player_to_move, from_pos, to_pos).unwrap(); // (|| panic!("Somehow an invalid move got through, namely {} to {}.", coord_to_position(from_pos), coord_to_position(to_pos)));
         print_turn(&b, winner, caps);
 
+
         if winner.is_some() {
+            println!("{}", new_b);
             break;
         }
-
+ 
         b = new_b;
         player_to_move = get_other_player(player_to_move);
     }
 }
 
-fn ai_game(human_player: Player) {
+fn ai_game(human_player: Player, ai_horizon : i32) {
     let mut b = Board::new();
     let stdin = io::stdin();
     let mut stdin = stdin.lock();
@@ -171,7 +171,7 @@ fn ai_game(human_player: Player) {
         let (from_pos, to_pos) = if human_player == player_to_move {
             get_next_valid_move_from_stdin(&b, human_player, &mut stdin)
         } else {
-            let (f, t) = get_ai_move(&b, player_to_move, AI_HORIZON).unwrap();
+            let (f, t) = get_ai_move(&b, player_to_move, ai_horizon).unwrap();
             println!(
                 "Computer played {} to {}.",
                 coord_to_position(f),
@@ -183,6 +183,7 @@ fn ai_game(human_player: Player) {
         print_turn(&b, winner, caps);
 
         if winner.is_some() {
+            println!("{}", new_b);
             break;
         }
 
@@ -204,6 +205,14 @@ struct Cli {
     /// To start as red in AI match.
     #[clap(short, long, requires = "ai_group")]
     red: bool,
+
+    /// how many turns ahead the AI tries to look.
+    /// Defaults to 3.
+    /// Smaller values make the AI easier to beat.
+    /// Larger values make the game slower.
+    /// The default seems to work good.
+    #[clap(short,long,requires="ai_group",default_value_t=3)]
+    horizon: u32,
 }
 
 fn main() {
@@ -213,7 +222,7 @@ fn main() {
             Player::Player2
         } else {
             Player::Player1
-        });
+        }, cli.horizon as i32);
     } else {
         human_game();
     }
