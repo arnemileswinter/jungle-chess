@@ -1,7 +1,7 @@
 use rand::seq::SliceRandom;
 use rand::thread_rng;
 
-use crate::board::{get_other_player, Board, Piece, Player, TileCoord};
+use crate::board::{get_other_player, Board, Player, TileCoord};
 
 fn manhattan_distance((x1, y1): TileCoord, (x2, y2): TileCoord) -> isize {
     (x1 - x2).abs() + (y1 - y2).abs()
