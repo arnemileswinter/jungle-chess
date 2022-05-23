@@ -7,10 +7,14 @@ edition = "2021"
 name = "junglechess"
 path = "src/lib.rs"
 
+[dependencies]
+rand = "0.8.5"
+clap = { version = "3.1.18", features = ["derive"], optional = true}
+
+[features]
+build-binary = ["clap"]
+
 [[bin]]
 name = "junglechess"
 path = "src/cli.rs"
-
-[dependencies]
-clap = { version = "3.1.18", features = ["derive"] }
-rand = "0.8.5"
+required-features = ["build-binary"]

@@ -8,7 +8,7 @@ Play Jungle Chess on an Emoji-Enabled Linux Terminal!
 
 ## Install
 
-You can download binaries from the [releases tab](https://github.com/arnemileswinter/jungle-chess/releases/) or build from source by cloning this repo and invoking `cargo run`.
+You can download binaries from the [releases tab](https://github.com/arnemileswinter/jungle-chess/releases/) or build from source by cloning this repo and invoking `cargo run --features="build-binary"`.
 
 Running `./jungle-chess` will start the 2-player local game.
 
