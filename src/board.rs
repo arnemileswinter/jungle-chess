@@ -290,12 +290,10 @@ impl Board {
                     (_, _, (Ground::Trap(trap_owner), Some((piece_owner, other_piece)))) => {
                         if piece_owner == who {
                             false // cannot capture our own pieces.
+                        } else if trap_owner == piece_owner {
+                            p.beats(other_piece)
                         } else {
-                            if trap_owner == piece_owner {
-                                p.beats(other_piece)
-                            } else {
-                                true
-                            }
+                            true
                         }
                     },
                     // can always enter the opponent's den, but not our own.
