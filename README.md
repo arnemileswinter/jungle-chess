@@ -58,3 +58,13 @@ The Lion (🦁) and Tiger (🐯) can jump across the water (🟦) both horizonta
 No Piece can enter their player's den(🏠).
 
 Naturally, a piece can only move onto an occupied square, if it can capture the occupant.
+
+## Usage as a Library
+
+You can pull this as a dependency with cargo and write your own frontend, [like i did with web-assembly](https://github.com/arnemileswinter/jungle-chess-web).
+
+Add to your Cargo.toml:
+```toml
+[dependencies]
+jungle-chess = {git = "https://github.com/arnemileswinter/jungle-chess", tag = "v1.3.0"}
+```
