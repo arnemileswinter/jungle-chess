@@ -287,11 +287,11 @@ impl Board {
                         (Ground::Grass, Some((other_player, other_piece))),
                     ) => who != other_player && p.beats(other_piece),
                     // if trap is occupied, a piece can only move towards with capture of opponent piece.
-                    (_, _, (Ground::Trap(trap_owner), Some((piece_owner, _)))) => {
+                    (_, _, (Ground::Trap(trap_owner), Some((piece_owner, other_piece)))) => {
                         if trap_owner == piece_owner {
-                            trap_owner != who // cannot capture our own pieces in traps.
+                            piece_owner != who // cannot capture our own pieces in traps.
                         } else {
-                            false
+                            p.beats(other_piece)
                         }
                     }
                     // can always enter the opponent's den, but not our own.
