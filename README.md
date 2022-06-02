@@ -1,6 +1,6 @@
 # Jungle-Chess
 
-> This is my first project written in Rust. Happy for contributors and feedback! The code is **dirty**.
+> This is my first project written in Rust. Happy for contributors and feedback!
 
 Play Jungle Chess on an Emoji-Enabled Linux Terminal!
 
